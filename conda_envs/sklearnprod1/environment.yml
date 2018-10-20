@@ -1,0 +1,32 @@
+name: sklearnprod1
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3
+  - cython
+  - scikit-learn
+  - graphviz
+  - pip
+  - jupyter_contrib_nbextensions
+  - pandas
+  - matplotlib
+  - pip:
+      - nimfa
+      - jupyterlab
+      - nose-timer
+      - wheelhouse_uploader
+      - nose
+      - yapf
+      - Wheel
+      - numpy
+      - scipy
+      - graphviz
+      - pandas
+      - pillow
+      - graphviz
+      - pydotplus
+      - jupyter
+      - jupyterthemes
+      - flake8
+      - autopep8
