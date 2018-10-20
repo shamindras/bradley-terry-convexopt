@@ -1,0 +1,162 @@
+\documentclass{article}
+
+% if you need to pass options to natbib, use, e.g.:
+% \PassOptionsToPackage{numbers, compress}{natbib}
+% before loading nips_2018
+
+% ready for submission
+\usepackage[final]{nips_2018}
+
+% to compile a preprint version, e.g., for submission to arXiv, add
+% add the [preprint] option:
+% \usepackage[preprint]{nips_2018}
+
+% to compile a camera-ready version, add the [final] option, e.g.:
+% \usepackage[final]{nips_2018}
+
+% to avoid loading the natbib package, add option nonatbib:
+% \usepackage[nonatbib]{nips_2018}
+
+\usepackage[utf8]{inputenc} % allow utf-8 input
+\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+\usepackage{hyperref}       % hyperlinks
+\usepackage{url}            % simple URL typesetting
+\usepackage{booktabs}       % professional-quality tables
+\usepackage{amsfonts}       % blackboard math symbols
+\usepackage{nicefrac}       % compact symbols for 1/2, etc.
+\usepackage{microtype}      % microtypography
+\usepackage{amsmath,amsthm,amssymb,amsfonts,verbatim}
+\usepackage{subfigure}
+\usepackage{multirow}
+\usepackage{subeqnarray}
+\usepackage{diagbox}
+\usepackage{graphicx}
+\usepackage{float}
+
+% Include custom macros
+\input{macros_math}
+
+\title{Efficient Convex Estimation of the Time Varying Bradley-Terry Model}
+
+% The \author macro works with any number of authors. There are two
+% commands used to separate the names and addresses of multiple
+% authors: \And and \AND.
+%
+% Using \And between authors leaves it to LaTeX to determine where to
+% break the lines. Using \AND forces a line break at that point. So,
+% if LaTeX puts 3 of 4 authors names on the first line, and the last
+% on the second line, try using \AND instead of \And before the third
+% author name.
+
+\author{
+  Heejong~Bong, Wanshan~Li, Shamindra~Shrotriya \\
+  %\thanks{Use footnote for providing further
+  %  information about author (webpage, alternative
+  %  address)---\emph{not} for acknowledging funding agencies.} \\
+  Department of Statistics and Data Science \\
+  Carnegie Mellon University \\
+  Pittsburgh, PA 15213 \\
+  \texttt{\{hbong,wanshanl,sshrotri\}@andrew.cmu.edu} \\
+  %% examples of more authors
+  %\And
+  %Wanshan~Li \\
+  %Department of Statistics and Data Sciences \\
+  %Carnegie Mellon University \\
+  %Pittsburgh, PA 15213 \\
+  %\texttt{wanshanl@andrew.cmu.edu} \\
+  %\AND
+  %Shamindra~Shrotriya \\
+  %Department of Statistics and Data Sciences \\
+  %Carnegie Mellon University \\
+  %Pittsburgh, PA 15213 \\
+  %\texttt{sshrotri@andrew.cmu.edu} \\
+  %% \And
+  %% Coauthor \\
+  %% Affiliation \\
+  %% Address \\
+  %% \texttt{email} \\
+  %% \And
+  %% Coauthor \\
+  %% Affiliation \\
+  %% Address \\
+  %% \texttt{email} \\
+}
+
+\begin{document}
+% \nipsfinalcopy is no longer used
+
+\maketitle
+
+%\begin{abstract}
+%  The abstract paragraph should be indented \nicefrac{1}{2}~inch
+%  (3~picas) on both the left- and right-hand margins. Use 10~point
+%  type, with a vertical spacing (leading) of 11~points.  The word
+%  \textbf{Abstract} must be centered, bold, and in point size 12. Two
+%  line spaces precede the abstract. The abstract must be limited to
+%  one paragraph.
+%\end{abstract}
+
+\section{Introduction}
+\subsection{Paired Comparison Data and Bradley-Terry Model}
+Paired comparison data is very common in everyday life especially in cases where we want to rank several objects. Rather than directly ranking all objects simultaneously it is usually much easier and efficient to first get results of pairwise comparisons. The pairwise comparisons can then be used to derive a global ranking across all individuals. 
+One such statistical model for global rankings via pairwise comparisons was presented by statisticians R. A. Bradley and M. E. Terry in their classic 1952 \cite{bradley1952rank} paper, and thereafter commonly referred to as the Bradley-Terry model in statistical literature. A similar model was also studied by Zermelo dating back to 1929 \cite{Zermelo1929}. The Bradley-Terry model is one of the most popular models to analyze paired comparison data due to it's interpretable setup and efficiency in estimation. The Bradley-Terry model along with its various generalizations has been studied and applied in various ranking applications across many broad domains. This includes the ranking of sports teams (\cite{MaV2012},\cite{CMV2012},\cite{FaT1994}), scientific journals (\cite{St1994},\cite{Va2016}) and the qualities of several brands (\cite{Ag2002},\cite{RaJ2007}). 
+\par
+In order to describe the model, suppose that we have $n$ objects, each with a score or index $p_i$ showing their power of competing with each other. The original Bradley-Terry model assumes that the comparisons between different pairs are independent and the results of comparisons between a given pair, object $i$ and $j$, are independent and identically distributed as a Bernoulli variable, with probability
+\begin{equation}
+    \prob{i\ \text{ beats } j} = \frac{p_i}{p_i + p_j}.
+\end{equation}
+% To incorporate the records of paired comparisons into the model, let's denote $t_{i,j}$ as the total number of paired comparisons between $i$ and $j$, and $C_{ij}$ as the number of times that object $i$ wins and $j$ loses, so $C_{ji} + C_{ij} = t_{i,j}$. For convenience we always make $i<j$ in the subscript of $t_{i,j}$. The original Bradley-Terry model assumes that
+% \begin{equation}
+% \begin{split}
+%     C_{ij} \sim \distBinom(t_{i,j},\pi_{ij}) \text{ and } 
+%     \pi_{ij}  = \frac{p_i}{p_i + p_j}.  
+% \end{split}
+% \end{equation}
+A common way to parameterize $\{p_i\}$ is to assume that $p_i = \exp(\beta_i)$, in this case, the Bradley-Terry model is usually expressed as
+$\logit(\prob{i\ \text{ beats } j}) = \beta_i - \beta_j$, where $\logit(x) \defined \log\frac{x}{1-x}$. An important assumption in the original Bradley-Terry model is that comparisons of different pairs are independent. However, in practice such assumption cannot hold, see \cite{BD1997},\cite{DHK2002},\cite{Ct2012},\cite{Va2016} for some discussions. A usual way to deal with such dependence is to use quasi-likelihood (\cite{Wd1974},\cite{Va2016}).
+
+\subsection{Time-varying Bradley-Terry Model}
+In many applications it is very common to observe paired comparison data spanning relatively over multiple (discrete) time periods. A natural question of interest is then to understand how the global rankings \textit{change} over time. For example in sports analytics the performance of teams often changes from season to season and thus explicitly incorporating the time-varying dependence into the model is crucial. In particular the papers \cite{FaT1994} and \cite{CMV2012} consider state-space generalizations of the Bradley-Terry model to modelling the sports tournaments data. Such a Bayesian framework is also studied in \cite{Gli1993}. Such dynamic analysis of paired comparison data is becoming more and more important because of the rapid growth of the time-dependent paired comparison data.
+\par
+
+Our main focus in this paper is to tackle the problem of efficiently estimating the parameters in the time-varying Bradley-Terry model under a frequentist framework. To the best of our knowledge, there has not yet been a frequentist generalization of Bradley-Terry model into the time-varying setting. In the frequentist framework we can analyse the accuracy of our estimators and convergence rate of our method in a more explicit way which is difficult under the Bayesian setting (e.g. in the state-space framework). Specifically we intend to formulate the overall time-varying Bradley-Terry estimation requirement as a convex optimization problem. We then intend to apply various well known convex optimization algorithms to derive efficient estimation of time-varying parameters with provable convergence guarantees.
+
+\subsection{The Convex formulation of the time-varying Bradley Terry Model}
+In the time varying frequentist setup of the Bradley Terry model, we extend the approach taken in the original paper \cite{bradley1952rank} estimating parameters of interest via maximizing the likelihood (or mimimizing negative likelihood) over the discrete observed time points $\{1, 2, \ldots, T\}$. The parameters of interest, $\bm{\beta}^{(t)}$, are now given for each time point $t \in \{1, 2, \ldots, T\}$. We assume that pairwise comparison between a given pair, object $i$ and $j$, at a given time point $t$ is decided by the corresponding parameter $\bm{\beta}^{(t)}$ so that
+\begin{equation}
+    \logit(\prob{i \text{ beats } j \text{ at } t}) = \bm{\beta}^{(t)}_i - \bm{\beta}^{(t)}_j.
+\label{eq:time_vary_BT}
+\end{equation}
+Given a $\bm{\beta}^{(t)}$, by equation \eqref{eq:time_vary_BT} we can get the log-likelihood $L_t(\bm{\beta}^{(t)})$. As the size of data in each $t$ is much smaller than the global data, we might want to smooth the parameter $\bm{\beta}^{(t)}$ across different time points and to leverage the dynamic structure in the global data. Our proposal is to include the penalization term $\alpha\sum_{t = 1}^{T-1} \|\bm{\beta}^{(t)} - \bm{\beta}^{(t+1)}\|_q$ for $q \ge 1$ to effectively `smooth' the estimation of parameter by penalizing large differences in subsequent time points. In sum, the time varying setup of the Bradley Terry model would be resulted into the following convex optimization problem:
+\begin{equation}\label{eq:opt_original}
+\begin{split}
+\min_{\{\bm{\beta}^{(t)}\}_{1\leq t \leq T}} &-\sum_{t = 1}^{T} L_t(\bm{\beta}^{(t)}) + \alpha\sum_{t = 1}^{T-1} \|\bm{\beta}^{(t)} - \bm{\beta}^{(t+1)}\|_q, \\
+\text{subject to} &\sum_{i=1}^N\beta^{(t)}_{i} = 0,\ 1\leq t\leq T, \alpha \ge 0
+\end{split}
+\end{equation}
+Our model will be adjusted to ensure that we don't oversmooth the estimation and miss out on picking up genuine changepoints in the ranking process which may naturally arise in practical applications.
+
+\section{Goals - for next milestone and overall project}
+
+\begin{enumerate}
+    \item We will try and exploit the time dependent structure of our simulation problem setup explicitly and identify different convex optimization methods to efficiently solve for the time-varying parameters using SGD, ADMM, ADAM etc. 
+    
+    \item We will then run numerous experimental simulations under toy settings of our proposed time varying Bradley Terry model to compare our optimization method with pre-existing methods such as Iteratively Weighted Least Squares (IWLS) and gradient descent methods (GD). We will specifically analyse the empirical convergence rate of such algorithms in terms of number of steps and also computational power i.e. number of flops used.
+    
+    \item Additionally under our specific time varying simulation assumptions on the parameters we will attempt to derive explicit theoretical convergence rate guarantees for our preferred convex optimization method based on the numerical simulation experiments we have conducted. This step will be for the final report and not for the second milestone
+    
+    \item We will then fit some real data (such as NFL data) on the time varying Bradley Terry model with proposed optimization method. We would compare how the time varying model performs relative to the standard Bradley Terry model.
+    
+    \item Overall besides efficiency we want to better appreciate how our model performs in terms of robustness and stability of rankings over time. We will initially undertake a sensitivity analysis to better understand how our model performs with additional appropriate penalization terms and highlight the flexibility of our approach in adapting to such settings.
+\end{enumerate}
+
+%\subsection{Evaluation criteria}
+%How can we demonstrate the smoothing effect here? Do we pick up changepoints?
+
+%\subsubsection*{Acknowledgments}
+
+%\newpage
+\bibliography{nips_2018}
+\bibliographystyle{plain}
+
+\end{document}
