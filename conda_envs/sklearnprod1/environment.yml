@@ -5,7 +5,11 @@ channels:
 dependencies:
   - python=3
   - cython
+  - cvxopt
+  - lapack
+  - cvxpy
   - scikit-learn
+  - seaborn
   - graphviz
   - pip
   - jupyter_contrib_nbextensions
