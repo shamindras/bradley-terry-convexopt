@@ -33,7 +33,7 @@ def get_game_matrix_list(N,T,tn,beta):
     beta: a list of T sublist, each storing the beta for N teams
     -------------
     Output:
-    game_matrix_list: the list of T game matrices, each stores the number of times that i wins j at entry (i,j)
+    game_matrix_list: a 3-d np.array of T game matrices, each matrix (t,:,:) stores the number of times that i wins j at entry (i,j) at season t
     '''
     game_matrix_list = [None] * T
     ind = -1 # a counter used to get tn
@@ -46,7 +46,7 @@ def get_game_matrix_list(N,T,tn,beta):
                 nij = np.random.binomial(n = tn[ind], p = pij, size = 1)
                 game_matrix[i,j],game_matrix[j,i] = nij, tn[ind] - nij
         game_matrix_list[t] = game_matrix
-    return game_matrix_list
+    return np.array(game_matrix_list)
 
 
 '''
