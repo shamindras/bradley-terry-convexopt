@@ -34,3 +34,4 @@ dependencies:
       - jupyterthemes
       - flake8
       - autopep8
+      - xlrd
