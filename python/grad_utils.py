@@ -1,6 +1,6 @@
 import numpy as np
 
-def negloglike(beta,game_matrix_list):
+def neg_log_like(beta,game_matrix_list):
     '''
     compute the negative loglikelihood
     ------------
@@ -10,7 +10,7 @@ def negloglike(beta,game_matrix_list):
     ------------
     -l: negative loglikelihood, a number
     '''
-    # beta could be a T-by-N matrix or a T*N-length vector
+    # beta could be a T-by-N matrix or T*N-by-1 array
     shape = beta.shape
     T, N = game_matrix_list.shape[0:2]
     if len(shape) == 1:
@@ -25,7 +25,7 @@ def negloglike(beta,game_matrix_list):
         D = b @ N_one.T - N_one @ b.T
         W = np.log(1 + np.exp(D))
         l += N_one.T @ (Cu * D) @ N_one - N_one.T @ ((Cu + Cl.T) * np.triu(W)) @ N_one
-    return - l[0,0]
+    return -l[0,0]
 
 
 def grad_nl(beta,game_matrix_list):
@@ -39,7 +39,7 @@ def grad_nl(beta,game_matrix_list):
     Output:
     -grad: gradient of negative loglikelihood, a T*N-by-1 array
     '''
-    # beta could be a T-by-N array or a T*N-length vector
+    # beta could be a T-by-N array or a T*N-by-1 array
     shape = beta.shape
     T, N = game_matrix_list.shape[0:2]
     if len(shape) == 1:
@@ -52,9 +52,9 @@ def grad_nl(beta,game_matrix_list):
         b = beta[t,:].reshape(N,1)
         W = np.exp(b @ N_one.T) + np.exp(N_one @ b.T)
         g[t,:] = ((C / W) @ np.exp(b) - (C / W).T @ N_one * np.exp(b)).ravel()
-    return - g.reshape(N * T,1)
+    return -g.reshape(N * T,1)
 
-def Hess_nl(beta,game_matrix_list):
+def hess_nl(beta,game_matrix_list):
     '''
     compute the Hessian of the negative loglikelihood
     ------------
@@ -65,7 +65,7 @@ def Hess_nl(beta,game_matrix_list):
     Output:
     -H: Hessian of negative loglikelihood T*N-by-T*N array
     '''
-    # beta could be a T-by-N array or a T*N-length array
+    # beta could be a T-by-N array or a T*N-by-1 array
     shape = beta.shape
     T, N = game_matrix_list.shape[0:2]
     if len(shape) == 1:
@@ -83,7 +83,7 @@ def Hess_nl(beta,game_matrix_list):
         H_t += -np.diag(sum(H_t))
         ind = range(t * N, (t + 1) * N)
         H[t * N:(t + 1) * N,t * N:(t + 1) * N] = H_t
-    return - H
+    return -H
 
 
 
