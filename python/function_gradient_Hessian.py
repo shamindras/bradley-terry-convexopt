@@ -1,4 +1,6 @@
-def loglike(beta,game_matrix_list):
+import numpy as np
+
+def negloglike(beta,game_matrix_list):
     '''
     compute the negative loglikelihood
     ------------
@@ -26,7 +28,7 @@ def loglike(beta,game_matrix_list):
     return - l[0,0]
 
 
-def grad_l(beta,game_matrix_list):
+def grad_nl(beta,game_matrix_list):
     '''
     compute the gradient of the negative loglikelihood
     ------------
@@ -52,7 +54,7 @@ def grad_l(beta,game_matrix_list):
         g[t,:] = ((C / W) @ np.exp(b) - (C / W).T @ N_one * np.exp(b)).ravel()
     return - g.reshape(N * T,1)
 
-def Hess_l(beta,game_matrix_list):
+def Hess_nl(beta,game_matrix_list):
     '''
     compute the Hessian of the negative loglikelihood
     ------------
@@ -68,7 +70,7 @@ def Hess_l(beta,game_matrix_list):
     T, N = game_matrix_list.shape[0:2]
     if len(shape) == 1:
         beta = beta.reshape(T,N)
-    # g stores the gradient
+    # H stores the Hessian
     H = np.zeros(N ** 2 * T ** 2).reshape(T * N,T * N)
     N_one = np.ones(N).reshape(N,1)
     for t in range(T):
