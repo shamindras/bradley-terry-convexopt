@@ -82,3 +82,60 @@ def Hess_l(beta,game_matrix_list):
         ind = range(t * N, (t + 1) * N)
         H[t * N:(t + 1) * N,t * N:(t + 1) * N] = H_t
     return - H
+
+
+
+
+'''
+##### example
+
+N = 10
+T = 10
+tn_median = 100
+bound_games = [tn_median - 2,tn_median + 2] # bounds for the number of games between each pair of teams
+
+##### tn: list of number of games between each pair of teams
+tn = stats.randint.rvs(low = int(bound_games[0]), high = int(bound_games[1]), size = int(T * N * (N - 1) / 2))
+
+beta0 = beta_gaussian_process(N, T, mu_parameters = [0,1], cov_parameters = [alpha,r], mu_type = 'constant', cov_type = 'toeplitz')
+game_matrix_list = get_game_matrix_list(N,T,tn,beta0)
+
+
+loglike(beta0,game_matrix_list)
+g = grad_l(beta0,game_matrix_list)
+H = Hess_l(beta0,game_matrix_list)
+
+
+
+
+
+##### test case (numerically)
+
+# verify gradient
+delta = 0.0001
+g_hat = np.zeros((N * T,1))
+
+for i in range(N * T):
+    beta1 = beta0.copy().reshape(N * T,1).ravel() 
+    beta2 = beta1.copy() 
+    beta1[i] -= delta
+    beta2[i] += delta
+    g_hat[i] = (loglike(beta2,game_matrix_list) - loglike(beta1,game_matrix_list)) / (2 * delta)
+
+print(sum(abs(g - g_hat)))
+
+
+# verify Hessian
+delta = 0.0001
+H_hat = np.zeros((N * T,N * T))
+
+for i in range(N * T):
+    beta1 = beta0.copy().reshape(N * T,1).ravel() 
+    beta2 = beta1.copy() 
+    beta1[i] -= delta
+    beta2[i] += delta
+    H_hat[i] = (grad_l(beta2,game_matrix_list) - grad_l(beta1,game_matrix_list)).ravel() / (2 * delta)
+
+print(sum(sum(abs(H_hat - H))))
+
+'''
