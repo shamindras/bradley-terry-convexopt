@@ -9,9 +9,9 @@ def beta_gaussian_process(N, T, mu_parameters, cov_parameters, mu_type = 'consta
     '''
     generate beta via a Gaussian process
     '''
-    beta_mu = stats.norm.rvs(loc = 0,scale = 1,size = N,random_state = 100)
     if mu_type == 'constant':
-        mu_start = mu_parameters[0]
+        loc, scale = mu_parameters
+        mu_start = stats.norm.rvs(loc = loc,scale = scale,size = N,random_state = 100)
         mu = [np.ones(T) * mu_start[i] for i in range(N)]
     if cov_type == 'toeplitz':
         alpha, r = cov_parameters
@@ -19,7 +19,7 @@ def beta_gaussian_process(N, T, mu_parameters, cov_parameters, mu_type = 'consta
     off_diag = 1 - T ** (-alpha) * np.arange(1,T + 1) ** r
     cov_single_path = sc.linalg.toeplitz(off_diag,off_diag)
 
-    return [np.random.multivariate_normal(mean = mu[i],cov = cov_single_path,size = 1).ravel() for i in range(N)]
+    return np.array([np.random.multivariate_normal(mean = mu[i],cov = cov_single_path,size = 1).ravel() for i in range(N)]).T
 
 
 def get_game_matrix_list(N,T,tn,beta):
@@ -30,7 +30,7 @@ def get_game_matrix_list(N,T,tn,beta):
     N: number of teams
     T: number of seasons
     tn: list of number of games between each pair of teams
-    beta: a list of T sublist, each storing the beta for N teams
+    beta: a T-by-N array
     -------------
     Output:
     game_matrix_list: a 3-d np.array of T game matrices, each matrix (t,:,:) stores the number of times that i wins j at entry (i,j) at season t
@@ -50,22 +50,21 @@ def get_game_matrix_list(N,T,tn,beta):
 
 
 '''
-some examles of running Wanshan's functions
+some examles of running functions beta_gaussian_process and get_game_matrix_list
 ##### example of generating
-
 
 N = 10 # number of teams
 T = 10 # number of seasons/rounds/years
-bound_games = [8,12] # bounds for the number of games between each pair of teams
+tn_median = 100
+bound_games = [tn_median - 2,tn_median + 2] # bounds for the number of games between each pair of teams
 
 ##### tn: list of number of games between each pair of teams
 tn = stats.randint.rvs(low = int(bound_games[0]), high = int(bound_games[1]), size = int(T * N * (N - 1) / 2))
 
 ##### get beta here #####
-beta = beta_gaussian_process(N, T, mu_parameters = [beta_mu], cov_parameters = [alpha,r], mu_type = 'constant', cov_type = 'toeplitz')
+beta = beta_gaussian_process(N, T, mu_parameters = [0,1], cov_parameters = [alpha,r], mu_type = 'constant', cov_type = 'toeplitz')
 
 game_matrix_list = get_game_matrix_list(N,T,tn,beta)
-
 
 
 ##### example of drawing paths
