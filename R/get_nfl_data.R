@@ -187,20 +187,6 @@ get_pairwise_diff_single_round <- function(single_season_data,
     base::return(out_df)
 }
 
-# Write files to output directory
-round_num <- 1
-rseason <- 2009
-out_nfl_dir <- here::here("data", "nfl", rseason)
-out_file_name <- stringr::str_c("round",
-                                stringr::str_pad(round_num,
-                                                 width = 2,
-                                                 side = "left",
-                                                 pad = "0"),
-                                sep = "_") %>%
-                    stringr::str_c(., ".csv")
-out_file_path <- base::file.path(out_nfl_dir, out_file_name)
-readr::write_csv(x = dat_rseason[[1]], path = out_file_path)
-
 write_csv_diffs <- function(rseason, round_num, all_rounds_rseason){
     out_nfl_dir <- here::here("data", "nfl", rseason)
     out_file_name <- stringr::str_c("round",
@@ -214,23 +200,6 @@ write_csv_diffs <- function(rseason, round_num, all_rounds_rseason){
     readr::write_csv(x = all_rounds_rseason[[round_num]],
                      path = out_file_path)
 }
-
-# Generate output for a single season
-rseason <- 2009
-round_nums <- 1:16
-
-dat_rseason <- get_single_season_data(games_data = games_data,
-                                   rseason = rseason)
-
-all_rounds_rseason <- purrr::map(round_nums,
-                                 ~get_pairwise_diff_single_round(single_season_data = dat_rseason,
-                                                                 round_num = .x))
-
-# Write out all rounds for the season
-purrr::walk(.x = round_nums,
-            ~write_csv_diffs(rseason = rseason,
-                             round_num = .x,
-                             all_rounds_rseason=all_rounds_rseason))
 
 create_single_season_csv <- function(rseason, round_nums){
     dat_rseason <- get_single_season_data(games_data = games_data,
@@ -247,7 +216,14 @@ create_single_season_csv <- function(rseason, round_nums){
                                  all_rounds_rseason=all_rounds_rseason))
 }
 
-rseasons <- 2009:2010
+#-------------------------------------------------------------------
+# Run code for all seasons and rounds
+#-------------------------------------------------------------------
+
+# Define all seasons and rounds (16 per season)
+rseasons <- 2009:2016
 round_nums <- 1:16
-purrr::walk(.x = rseasons, ~create_single_season_csv(rseason = .x,
-                                                     round_nums = round_nums))
+
+# Run for all seasons and rounds
+purrr::walk(.x = rseasons,
+            ~create_single_season_csv(rseason = .x, round_nums = round_nums))
