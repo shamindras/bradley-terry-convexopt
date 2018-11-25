@@ -235,12 +235,16 @@ single_season_2009 <- get_single_season_data(games_data = games_data,
 unq_teams_2009 <- single_season_2009$unq_teams %>%
                     dplyr::select(team)
 
+# Write out the unique teams from 2009
+readr::write_csv(x = unq_teams_2009,
+                 path = here::here("data", "nfl", "unq_teams_2009.csv"))
+
 #-------------------------------------------------------------------
 # Run code for all seasons and rounds
 #-------------------------------------------------------------------
 
 # Define all seasons and rounds (16 per season)
-rseasons <- 2009:2016
+rseasons <- 2009:2015
 round_nums <- 1:16
 
 # Run for all seasons and rounds
