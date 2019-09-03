@@ -1,0 +1,3 @@
+[submodule "submods/bttv"]
+	path = submods/bttv
+	url = git@github.com:shamindras/bttv.git
