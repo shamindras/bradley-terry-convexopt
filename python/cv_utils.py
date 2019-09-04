@@ -9,8 +9,18 @@ def loocv(data, lambdas_smooth, opt_fn,
     conduct local
     ----------
     Input:
-    beta: TxN array or a TN vector
-    game_matrix_list: TxNxN array
+    data: TxNxN array
+    lambdas_smooth: a vector of query lambdas
+    opt_fn: a python function in a particular form of 
+        opt_fn(data, lambda_smooth, beta_init=None, **kwargs)
+        kwargs might contain hyperparameters 
+        (e.g., step size, max iteration, etc.) for
+        the optimization function
+    num_loocv: the number of random samples left-one-out cv sample
+    get_estimate: whether or not we calculate estimates beta's for 
+        every lambdas_smooth. If True, we use those estimates as 
+        initial values for optimizations with cv data
+    **kwargs: keyword arguments for opt_fn
     ----------
     Output:
     lambda_cv: lambda_smooth chosen after cross-validation
