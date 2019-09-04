@@ -75,7 +75,7 @@ def hess_l2_sq(beta, game_matrix_list, l):
 def PGD_l2_sq(data, lambda_smooth, beta_init=None,
               max_iter=1000, ths=1e-12, 
               step_size=0.1, max_back=100, a=0.2, b=0.5,
-              verbose=False):
+              verbose=False, **kwargs):
     '''
     conduct a proximal gradient descent of the model
     ----------
