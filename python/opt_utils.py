@@ -1,12 +1,9 @@
 import numpy as np
 import scipy as sc
-import pandas as pd
 import scipy.linalg as spl
 import grad_utils as model
 
-
 ########################## squared l2 penalty ############################
-
 
 def objective_l2_sq(beta, game_matrix_list, l_penalty):
     '''
@@ -75,8 +72,76 @@ def hess_l2_sq(beta, game_matrix_list, l):
     l2_hess[-N:,-N:] -= l * 2 * np.diag(np.ones(N))
     return  l2_hess
 
+def PGD_l2_sq(data, lambda_smooth, beta_init=None,
+              max_iter=1000, ths=1e-12, 
+              step_size=0.1, max_back=100, a=0.2, b=0.5,
+              verbose=False):
+    '''
+    conduct a proximal gradient descent of the model
+    ----------
+    Input:
+    data: TxNxN array
+    lambda_smooth: numeric
+    beta_init: TxN array or TN vector
+    max_iter, max_back: integer
+    ths, step_size, a, b: numeric
+    verbose: logic
+    ----------
+    Output:
+    beta: optimization solution
+    objective_wback: history of objective during optimization
+    '''
+        
+    # intiialize optimization
+    if beta_init is None:
+        beta = np.zeros(data.shape[:2])
+    else:
+        beta = np.reshape(beta_init, data.shape[:2])
+    nll = model.neg_log_like(beta, data)
 
+    # initialize record
+    objective_wback = [opt_utils.objective_l2_sq(beta, data, lambda_smooth)]
+    if verbose:
+        print("initial objective value: %f"%objective_wback[-1])
 
+    # iteration
+    for i in range(max_iter):
+        # compute gradient
+        gradient = model.grad_nl(beta, data).reshape(beta.shape)
+
+        # backtracking line search
+        s = step_size
+        for j in range(max_back):
+            beta_new = opt_utils.prox_l2_sq(beta - s*gradient, s, lambda_smooth)
+            beta_diff = beta_new - beta
+
+            nll_new = model.neg_log_like(beta_new, data)
+            nll_back = (nll + np.sum(gradient * beta_diff) 
+                        + np.sum(np.square(beta_diff)) / (2*s))
+
+            if nll_new <= nll_back:
+                break
+            s *= b
+
+        # proximal gradient update
+        beta = beta_new
+        nll = nll_new
+
+        # record objective value
+        objective_wback.append(opt_utils.objective_l2_sq(beta, data, lambda_smooth))
+        
+        if verbose:
+            print("%d-th PGD, objective value: %f"%(i+1, objective_wback[-1]))
+        if objective_wback[-2] - objective_wback[-1] < ths:
+            if verbose:
+                print("Converged!")
+            break
+
+    if i >= max_iter:
+        if verbose:
+            print("Not converged.")
+    
+    return beta, objective_wback
 
 ########################## l2 penalty ############################
 def objective_l2(beta, game_matrix_list, l_penalty):
