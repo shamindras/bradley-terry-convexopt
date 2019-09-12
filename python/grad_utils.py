@@ -5,16 +5,15 @@ def neg_log_like(beta,game_matrix_list):
     compute the negative loglikelihood
     ------------
     Input:
+    
     beta: can be a T-by-N array or a T*N-by-1 array
     game_matrix_list: records of games, T-by-N-by-N array
     ------------
     -l: negative loglikelihood, a number
     '''
     # beta could be a T-by-N matrix or T*N-by-1 array
-    shape = beta.shape
     T, N = game_matrix_list.shape[0:2]
-    if len(shape) == 1:
-        beta = beta.reshape(T,N)
+    beta = beta.reshape(T,N)
     # l stores the loglikelihood
     l = 0
     N_one = np.ones(N).reshape(N,1)
@@ -40,10 +39,8 @@ def grad_nl(beta,game_matrix_list):
     -grad: gradient of negative loglikelihood, a T*N-by-1 array
     '''
     # beta could be a T-by-N array or a T*N-by-1 array
-    shape = beta.shape
     T, N = game_matrix_list.shape[0:2]
-    if len(shape) == 1:
-        beta = beta.reshape(T,N)
+    beta = beta.reshape(T,N)
     # g stores the gradient
     g = np.zeros(N * T).reshape(T,N)
     N_one = np.ones(N).reshape(N,1)
@@ -66,10 +63,8 @@ def hess_nl(beta,game_matrix_list):
     -H: Hessian of negative loglikelihood T*N-by-T*N array
     '''
     # beta could be a T-by-N array or a T*N-by-1 array
-    shape = beta.shape
     T, N = game_matrix_list.shape[0:2]
-    if len(shape) == 1:
-        beta = beta.reshape(T,N)
+    beta = beta.reshape(T,N)
     # H stores the Hessian
     H = np.zeros(N ** 2 * T ** 2).reshape(T * N,T * N)
     N_one = np.ones(N).reshape(N,1)
