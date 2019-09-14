@@ -31,8 +31,8 @@ def loocv(data, lambdas_smooth, opt_fn,
     betas = [None] * lambdas_smooth.shape[0]
     
     for i, lambda_smooth in enumerate(lambdas_smooth):
-        beta, _ = opt_fn(data, lambda_smooth, **kwargs)
-        betas[i] = beta
+        _, beta = opt_fn(data, lambda_smooth, **kwargs)
+        betas[i] = beta.reshape(data.shape[:2])
         
     indices = np.array(np.where(np.full(data.shape, True))).T
     cum_match = np.cumsum(data.flatten())
@@ -45,8 +45,9 @@ def loocv(data, lambdas_smooth, opt_fn,
         data_loocv[tuple(rand_index)] -= 1
 
         for j, lambda_smooth in enumerate(lambdas_smooth):
-            beta_loocv, _ = opt_fn(data_loocv, lambda_smooth, 
+            _, beta_loocv = opt_fn(data_loocv, lambda_smooth, 
                                    beta_init = betas[j], **kwargs)
+            beta_loocv = beta_loocv.reshape(data.shape[:2])
             loglikes_loocv[j] += beta_loocv[rand_index[0],rand_index[1]] \
                    - np.log(np.exp(beta_loocv[rand_index[0],rand_index[1]])
                             + np.exp(beta_loocv[rand_index[0],rand_index[2]]))
