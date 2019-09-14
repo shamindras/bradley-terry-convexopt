@@ -75,9 +75,6 @@ def hess_l2_sq(beta, game_matrix_list, l):
     l2_hess[-N:,-N:] -= l * 2 * np.diag(np.ones(N))
     return  l2_hess
 
-
-
-
 def prox_l2_sq(beta, s, l):
     '''
     proximal operator for l2-square-penalty
@@ -94,17 +91,22 @@ def prox_l2_sq(beta, s, l):
     # solve banded @ beta* = beta
     return spl.solve_banded((1,1), banded, beta, True, True, False)
 
-
-
-def newton_l2_sq(data,l_penalty = 1,max_iter = 1000,ths = 1e-12,
-    step_init = 1,max_back = 200,a = 0.01,b = 0.3):
+def newton_l2_sq(data, l_penalty=1,
+                 max_iter=1000, ths=1e-12,
+                 step_init=1, max_back=200, a=0.01, b=0.3,
+                 beta_init=None, verbose=False):
     # initialize optimization
     T, N = data.shape[0:2]
-    beta = np.zeros(data.shape[:2]).reshape((N * T,1))
+    if beta_init is None:
+        beta = np.zeros(data.shape[:2]).reshape((N * T,1))
+    else:
+        beta = beta_init.reshape((N*T, 1))
+    nll = model.neg_log_like(beta, data)
     
     # initialize record
     objective_nt = [objective_l2_sq(beta, data, l_penalty)]
-    print("initial objective value: %f"%objective_nt[-1])
+    if verbose:
+        print("initial objective value: %f"%objective_nt[-1])
 
     # iteration
     for i in range(max_iter):
@@ -130,26 +132,34 @@ def newton_l2_sq(data,l_penalty = 1,max_iter = 1000,ths = 1e-12,
         objective_nt.append(obj_new)
         obj_old = obj_new
 
-        print("%d-th Newton, objective value: %f"%(i+1, objective_nt[-1]))
+        if verbose:
+            print("%d-th Newton, objective value: %f"%(i+1, objective_nt[-1]))
         if objective_nt[-2] - objective_nt[-1] < ths:
-            print("Converged!")
+            if verbose:
+                print("Converged!")
             break
-            
-    if i >= max_iter - 1:
-        print("Not converged.")
+        elif i >= max_iter-1:
+            if verbose:
+                print("Not converged.")
     return objective_nt, beta
 
 
-def pgd_l2_sq(data,l_penalty = 1,max_iter = 1000,ths = 1e-12,
-    step_init = 0.05,max_back = 200,a = 0.01,b = 0.3):
+def pgd_l2_sq(data, l_penalty=1,
+              max_iter=1000, ths=1e-12,
+              step_init=0.5, max_back=200, a=0.2, b=0.5,
+              beta_init=None, verbose=False):
     # initialize optimization
     T, N = data.shape[0:2]
-    beta = np.zeros(data.shape[:2])
+    if beta_init is None:
+        beta = np.zeros(data.shape[:2])
+    else:
+        beta = beta_init
     nll = model.neg_log_like(beta, data)
 
     # initialize record
     objective_wback = [objective_l2_sq(beta, data, l_penalty)]
-    print("initial objective value: %f"%objective_wback[-1])
+    if verbose:
+        print("initial objective value: %f"%objective_wback[-1])
 
     # iteration
     for i in range(max_iter):
@@ -177,13 +187,15 @@ def pgd_l2_sq(data,l_penalty = 1,max_iter = 1000,ths = 1e-12,
         # record objective value
         objective_wback.append(objective_l2_sq(beta, data, l_penalty))
         
-        print("%d-th PGD, objective value: %f"%(i+1, objective_wback[-1]))
+        if verbose:
+            print("%d-th PGD, objective value: %f"%(i+1, objective_wback[-1]))
         if abs(objective_wback[-2] - objective_wback[-1]) < ths:
-            print("Converged!")
+            if verbose:
+                print("Converged!")
             break
-            
-    if i >= max_iter - 1:
-        print("Not converged.")
+        elif i >= max_iter-1:
+            if verbose:
+                print("Not converged.")
 
     return objective_wback, beta
 
@@ -243,9 +255,10 @@ def grad_l2(beta, game_matrix_list, l):
 
 
 
-def gd_l2(data,l_penalty = 1,max_iter = 1000,ths = 1e-12,
-    step_init = 0.05,max_back = 200,a = 0.01,b = 0.3):
-
+def gd_l2(data, l_penalty=1,
+          max_iter=1000, ths=1e-12,
+          step_init=1, max_back=200, a=0.01, b=0.3,
+          beta_init=None, verbose=False):
     # intiialize optimization
     T, N = data.shape[0:2]
     beta = np.zeros(data.shape[:2])
@@ -339,8 +352,10 @@ def prox_l1(t,x):
     return np.sign(x) * np.max(np.array([x * 0, np.abs(x) - t]),axis = 0)
 
 
-def admm_l2(data,l_penalty = 1,max_iter = 1000,ths = 1e-12,eta = 20,
-    step_init = 0.05,max_back = 200,a = 0.01,b = 0.3):
+def admm_l2(data, l_penalty=1,
+            max_iter=1000, ths=1e-12, eta=20, 
+            step_init=1, max_back=200, a=0.01, b=0.3,
+            beta_init=None, verbose=False):
     # intiialize optimization
     T, N = data.shape[0:2]
 
@@ -441,9 +456,9 @@ def grad_l1(beta, game_matrix_list, l):
     
     return  l1_grad
 
-
-
-def gd_l1(data,l_penalty = 1,max_iter = 50000,ths = 1e-12,step_size = 0.05):
+def gd_l1(data, l_penalty=1,
+          max_iter=50000, ths=1e-12, step_size=0.05, 
+          beta_init=None, verbose=False):
     # intiialize optimization
     T, N = data.shape[0:2]
     beta = np.zeros(data.shape[:2])
@@ -478,8 +493,10 @@ def gd_l1(data,l_penalty = 1,max_iter = 50000,ths = 1e-12,step_size = 0.05):
 
 
 
-def admm_l1(data,l_penalty = 1,max_iter = 1000,ths = 1e-12,eta = 20,
-    step_init = 0.05,max_back = 200,a = 0.01,b = 0.3):
+def admm_l1(data, l_penalty=1,
+            max_iter=1000, ths=1e-12, eta=20,
+            step_init=1, max_back=200, a=0.01, b=0.3,
+            beta_init=None, verbose=False):
     # intiialize optimization
     T, N = data.shape[0:2]
 
