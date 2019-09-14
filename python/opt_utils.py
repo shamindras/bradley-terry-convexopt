@@ -255,9 +255,10 @@ def grad_l2(beta, game_matrix_list, l):
 
 
 
-def gd_l2(data,l_penalty = 1,max_iter = 1000,ths = 1e-12,
-    step_init = 0.05,max_back = 200,a = 0.01,b = 0.3):
-
+def gd_l2(data, l_penalty=1,
+          max_iter=1000, ths=1e-12,
+          step_init=1, max_back=200, a=0.01, b=0.3,
+          beta_init=None, verbose=False):
     # intiialize optimization
     T, N = data.shape[0:2]
     beta = np.zeros(data.shape[:2])
@@ -351,8 +352,10 @@ def prox_l1(t,x):
     return np.sign(x) * np.max(np.array([x * 0, np.abs(x) - t]),axis = 0)
 
 
-def admm_l2(data,l_penalty = 1,max_iter = 1000,ths = 1e-12,eta = 20,
-    step_init = 0.05,max_back = 200,a = 0.01,b = 0.3):
+def admm_l2(data, l_penalty=1,
+            max_iter=1000, ths=1e-12, eta=20, 
+            step_init=1, max_back=200, a=0.01, b=0.3,
+            beta_init=None, verbose=False):
     # intiialize optimization
     T, N = data.shape[0:2]
 
@@ -453,9 +456,9 @@ def grad_l1(beta, game_matrix_list, l):
     
     return  l1_grad
 
-
-
-def gd_l1(data,l_penalty = 1,max_iter = 50000,ths = 1e-12,step_size = 0.05):
+def gd_l1(data, l_penalty=1,
+          max_iter=50000, ths=1e-12, step_size=0.05, 
+          beta_init=None, verbose=False):
     # intiialize optimization
     T, N = data.shape[0:2]
     beta = np.zeros(data.shape[:2])
@@ -490,8 +493,10 @@ def gd_l1(data,l_penalty = 1,max_iter = 50000,ths = 1e-12,step_size = 0.05):
 
 
 
-def admm_l1(data,l_penalty = 1,max_iter = 1000,ths = 1e-12,eta = 20,
-    step_init = 0.05,max_back = 200,a = 0.01,b = 0.3):
+def admm_l1(data, l_penalty=1,
+            max_iter=1000, ths=1e-12, eta=20,
+            step_init=1, max_back=200, a=0.01, b=0.3,
+            beta_init=None, verbose=False):
     # intiialize optimization
     T, N = data.shape[0:2]
 
