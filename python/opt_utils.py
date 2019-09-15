@@ -101,7 +101,6 @@ def newton_l2_sq(data, l_penalty=1,
         beta = np.zeros(data.shape[:2]).reshape((N * T,1))
     else:
         beta = beta_init.reshape((N*T, 1))
-    nll = model.neg_log_like(beta, data)
     
     # initialize record
     objective_nt = [objective_l2_sq(beta, data, l_penalty)]
@@ -259,14 +258,17 @@ def gd_l2(data, l_penalty=1,
           max_iter=1000, ths=1e-12,
           step_init=1, max_back=200, a=0.01, b=0.3,
           beta_init=None, verbose=False):
-    # intiialize optimization
+    # initialize optimization
     T, N = data.shape[0:2]
-    beta = np.zeros(data.shape[:2])
-    # beta = np.random.rand(N * T,1).reshape(T,N)
+    if beta_init is None:
+        beta = np.zeros(data.shape[:2])
+    else:
+        beta = beta_init
 
     # initialize record
     objective_gd = [objective_l2(beta, data, l_penalty)]
-    print("initial objective value: %f"%objective_gd[-1])
+    if verbose:
+        print("initial objective value: %f"%objective_gd[-1])
 
         # iteration
     for i in range(max_iter):
@@ -304,14 +306,9 @@ def obj_amlag(betak,data,A,muk,eta,thetak):
     return model.neg_log_like(betak, data) + (A @ betak).T @ muk + eta / 2 * np.linalg.norm(A @ betak - thetak) ** 2
     
 def admm_sub_beta(data,T,N,A,lam,eta,betak,muk,thetak,paras):
-    step_size, ths, max_iter = paras
+    step_init, ths, max_iter, max_back, a, b = paras
     obj_old = np.inf
-    ths = 1e-13
-    step_size = 0.05
-    max_back = 100
-    a = 0.2
-    b = 0.5
-    
+
     for i in range(max_iter):    
         # compute gradient
         gradient = model.grad_nl(betak, data) + A.T @ muk + eta * A.T @ (A @ betak - thetak)
@@ -319,7 +316,7 @@ def admm_sub_beta(data,T,N,A,lam,eta,betak,muk,thetak,paras):
         gradient = gradient[1:]
         hessian = hessian[1:,1:]
         # proximal gradient update
-        s = step_size
+        s = step_init
         beta_new = betak - 0 # make a copy
         
         for j in range(max_back):
@@ -355,14 +352,16 @@ def prox_l1(t,x):
 def admm_l2(data, l_penalty=1,
             max_iter=1000, ths=1e-12, eta=20, 
             step_init=1, max_back=200, a=0.01, b=0.3,
-            beta_init=None, verbose=False):
-    # intiialize optimization
+            beta_init=None, verbose=False, return_b_obj = False):
+    # initialize optimization
     T, N = data.shape[0:2]
+    if beta_init is None:
+        beta = np.zeros(data.shape[:2]).reshape((N * T,1))
+    else:
+        beta = beta_init.reshape((N*T, 1))
 
     # optimization parameters
-    eta = eta
-    step_size = 0.03
-    paras = [step_size, ths, max_iter]
+    paras = [step_init, ths, max_iter, max_back, a, b]
 
     A = np.zeros(((T - 1) * N, T * N))
     for i in range(N):
@@ -378,7 +377,8 @@ def admm_l2(data, l_penalty=1,
     # initialize record
     objective_admm_b_l2 = [objective_l2(betak, data, l_penalty)]
     objective_admm = [model.neg_log_like(betak, data) + l_penalty * np.linalg.norm(thetak)]
-    print("initial objective value: %f"%objective_admm_b_l2[-1])
+    if verbose:
+        print("initial objective value: %f"%objective_admm[-1])
 
     # iteration
     for i in range(max_iter):
@@ -390,19 +390,22 @@ def admm_l2(data, l_penalty=1,
         objective_admm_b_l2.append(objective_l2(betak, data, l_penalty))
         objective_admm.append(model.neg_log_like(betak, data) + l_penalty * np.linalg.norm(thetak))
         
-    #     print("%d-th ADMM, objective value: %f"%(i+1, objective_admm_b_l2[-1]))
-    #     if abs(objective_admm_b_l2[-2] - objective_admm_b_l2[-1]) < ths:
-    #         print("Converged!")
-    #         break
-        print("%d-th ADMM, objective value: %f"%(i+1, objective_admm[-1]))
+        # if verbose
+        #     print("%d-th ADMM, objective value: %f"%(i+1, objective_admm_b_l2[-1]))
+        # if abs(objective_admm_b_l2[-2] - objective_admm_b_l2[-1]) < ths:
+        #     print("Converged!")
+        #     break
+        if verbose:
+            print("%d-th ADMM, objective value: %f"%(i+1, objective_admm[-1]))
         if objective_admm[-2] - objective_admm[-1] < ths:
             print("Converged!")
             break
             
     if i >= max_iter - 1:
         print("Not converged.")
-    return objective_admm, objective_admm_b_l2, betak
-
+    if return_b_obj:
+        return objective_admm, objective_admm_b_l2, betak
+    return objective_admm, betak
 
 ########################## l1 penalty ############################
 
@@ -459,10 +462,12 @@ def grad_l1(beta, game_matrix_list, l):
 def gd_l1(data, l_penalty=1,
           max_iter=50000, ths=1e-12, step_size=0.05, 
           beta_init=None, verbose=False):
-    # intiialize optimization
+    # initialize optimization
     T, N = data.shape[0:2]
-    beta = np.zeros(data.shape[:2])
-    # beta = np.random.rand(N * T,1).reshape(T,N)
+    if beta_init is None:
+        beta = np.zeros(data.shape[:2])
+    else:
+        beta = beta_init
 
     # initialize record
     objective_gd = [objective_l1(beta, data, l_penalty)]
@@ -479,14 +484,15 @@ def gd_l1(data, l_penalty=1,
         # objective value
         objective_gd.append(objective_l1(beta, data, l_penalty))
         
-        if (i + 1) % 100 == 0:
-            print("%d-th GD, objective value: %f"%(i+1, objective_gd[-1]))
-        
+        if verbose: 
+            if (i + 1) % 100 == 0:
+                print("%d-th GD, objective value: %f"%(i+1, objective_gd[-1]))
+
         if abs(objective_gd[-2] - objective_gd[-1]) < ths:
             print("Converged!")
             break
             
-    if i >= max_iter:
+    if i >= max_iter - 1:
         print("Not converged.")
 
     return objective_gd, beta
@@ -496,14 +502,16 @@ def gd_l1(data, l_penalty=1,
 def admm_l1(data, l_penalty=1,
             max_iter=1000, ths=1e-12, eta=20,
             step_init=1, max_back=200, a=0.01, b=0.3,
-            beta_init=None, verbose=False):
-    # intiialize optimization
+            beta_init=None, verbose=False, return_b_obj = False):
+    # initialize optimization
     T, N = data.shape[0:2]
+    if beta_init is None:
+        beta = np.zeros(data.shape[:2]).reshape((N * T,1))
+    else:
+        beta = beta_init.reshape((N*T, 1))
 
     # optimization parameters
-    eta = eta
-    step_size = 0.03
-    paras = [step_size, ths, max_iter]
+    paras = [step_init, ths, max_iter, max_back, a, b]
 
     A = np.zeros(((T - 1) * N, T * N))
     for i in range(N):
@@ -517,9 +525,10 @@ def admm_l1(data, l_penalty=1,
     muk = A @ betak - thetak
 
     # initialize record
-    objective_admm_b_l1= [objective_l1(betak, data, l_penalty)]
+    objective_admm_b_l1 = [objective_l1(betak, data, l_penalty)]
     objective_admm = [model.neg_log_like(betak, data) + l_penalty * np.linalg.norm(thetak,1)]
-    print("initial objective value: %f"%objective_admm_b_l1[-1])
+    if verbose:
+        print("initial objective value: %f"%objective_admm[-1])
 
     # iteration
     for i in range(max_iter):
@@ -531,16 +540,19 @@ def admm_l1(data, l_penalty=1,
         objective_admm_b_l1.append(objective_l1(betak, data, l_penalty))
         objective_admm.append(model.neg_log_like(betak, data) + l_penalty * np.linalg.norm(thetak,1))
         
-    #     print("%d-th ADMM, objective value: %f"%(i+1, objective_admm_b_l1[-1]))
-    #     if abs(objective_admm_b_l1[-2] - objective_admm_b_l1[-1]) < ths:
-    #         print("Converged!")
-    #         break
-        print("%d-th ADMM, objective value: %f"%(i+1, objective_admm[-1]))
+        # if verbose:
+        #     print("%d-th ADMM, objective value: %f"%(i+1, objective_admm_b_l1[-1]))
+        # if abs(objective_admm_b_l1[-2] - objective_admm_b_l1[-1]) < ths:
+        #     print("Converged!")
+        #     break
+        if verbose:
+            print("%d-th ADMM, objective value: %f"%(i+1, objective_admm[-1]))
         if objective_admm[-2] - objective_admm[-1] < ths:
             print("Converged!")
             break
             
     if i >= max_iter - 1:
         print("Not converged.")
-    return objective_admm, objective_admm_b_l1, betak
-
+    if return_b_obj:
+        return objective_admm, objective_admm_b_l1, betak
+    return objective_admm, betak
