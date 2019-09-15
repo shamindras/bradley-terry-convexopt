@@ -1,17 +1,18 @@
-# Time-varying Bradley Terry Model in Frequentist Setting
+# Efficient Estimation of Distribution-free dynamics in the Bradley-Terry Model
 
 This repo stores the notes/ experiments and paper for
-the paper titled ""
+the paper titled _Time-varying Bradley Terry Model in Frequentist Setting_
 
 The paper can be found here and is co-authored by
-  - Heejong Bong (HB)
-  - Wanshan Li (WL)
-  - Shamindra Shrotriya (SS).
+  - Anonymous Authors
 
-For more details on how to reproduce our analysis, please
-see our detailed [wiki](https://github.com/shamindras/bradley-terry-convexopt/wiki/%5B00%5D-Home)
-for step by step instructions. For convenience, the 
-main steps are as below:
+## Reproducibility of Analysis
+
+For more details on how to reproduce the analysis in our paper, 
+please see our detailed [wiki](https://github.com/shamindras/bradley-terry-convexopt/wiki/%5B00%5D-Home)
+for step by step instructions. 
+
+For convenience, the main steps to follow are as below:
 
 0. [00 Home](https://github.com/shamindras/bradley-terry-convexopt/wiki/%5B00%5D-Home)
 1. [01 Setup Github (First Time)](https://github.com/shamindras/bradley-terry-convexopt/wiki/%5B01%5D-Setup-Github-(First-Time))

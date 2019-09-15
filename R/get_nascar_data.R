@@ -13,6 +13,7 @@ get_nascar_2002_dat <- function(){
     furls <- glue::glue("{base_url}{fnames}")
     fpaths <- glue::glue("{here::here('data', 'nascar')}/{fnames}")
 
+    # Download all datasets to the specified nascar folder
     purrr::walk2(.x = furls, .y = fpaths,
                  .f = ~utils::download.file(url = .x, destfile = .y))
 }
