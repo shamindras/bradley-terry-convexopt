@@ -1,22 +1,17 @@
-# Clean up
-rm(list = ls())
-cat("\014")
+#!/usr/bin/env Rscript
+
+# The following script will give us the pairwise Bradley-Terry
+# model data for NFL
 
 #-------------------------------------------------------------------
 # Setup
 #-------------------------------------------------------------------
 # File for building WP model
 
-# Access tidyverse:
-# install.packages("tidyverse")
-# install.packages("here")
 library(tidyverse)
 library(here)
-
-# Access nflWAR:
-# install.packages("devtools")
 devtools::install_github("ryurko/nflWAR")
-# library(nflWAR)
+library(nflWAR)
 
 get_single_season_data <- function(games_data, rseason){
 

@@ -1,6 +1,4 @@
-# Clean up
-rm(list = ls())
-cat("\014")
+#!/usr/bin/env Rscript
 
 # The following script will give us the pairwise Bradley-Terry
 # model data for NFL
@@ -10,16 +8,10 @@ cat("\014")
 #-------------------------------------------------------------------
 # File for building WP model
 
-# Access tidyverse:
-# install.packages("tidyverse")
-# install.packages("here")
 library(tidyverse)
 library(here)
-
-# Access nflWAR:
-# install.packages("devtools")
 devtools::install_github("ryurko/nflWAR")
-# library(nflWAR)
+library(nflWAR)
 
 #-------------------------------------------------------------------
 # Define Variables
