@@ -15,7 +15,7 @@ for step by step instructions.
 For convenience, the main steps to follow are as below:
 
 0. [00 Home](https://github.com/shamindras/bradley-terry-convexopt/wiki/%5B00%5D-Home)
-1. [01 Setup Github (First Time)](https://github.com/shamindras/bradley-terry-convexopt/wiki/%5B01%5D-Setup-Github-(First-Time))
-2. [02 Setup (Installation)](https://github.com/shamindras/bradley-terry-convexopt/wiki/%5B02%5D-Setup-(Installation))
-3. [03 Reproducibility Analysis](https://github.com/shamindras/bradley-terry-convexopt/wiki/%5B03%5D-Reproducibility-Analysis)
-4. [04 Setup (Contributing Workflow)](https://github.com/shamindras/bradley-terry-convexopt/wiki/%5B04%5D-Setup-(Contributing-Workflow))
+1. [01 Setup](https://github.com/shamindras/bradley-terry-convexopt/wiki/%5B01%5D-Setup)
+2. [02 Guides on Using Utils](https://github.com/shamindras/bradley-terry-convexopt/wiki/%5B02%5D-Guides-on-Using-Utils)
+3. [03 Reproduce Results](https://github.com/shamindras/bradley-terry-convexopt/wiki/%5B03%5D-Reproduce-Results)
+4. [04 Contributing Workflow](https://github.com/shamindras/bradley-terry-convexopt/wiki/%5B04%5D-Contributing-Workflow)
