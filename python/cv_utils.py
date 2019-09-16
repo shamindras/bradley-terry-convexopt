@@ -40,6 +40,7 @@ def loocv(data, lambdas_smooth, opt_fn,
     indices = np.array(np.where(np.full(data.shape, True))).T
     cum_match = np.cumsum(data.flatten())
     
+    console = open('/dev/stdout', 'w')
     loglikes_loocv = np.zeros(lambdas_smooth.shape)
     for i in range(num_loocv):
         data_loocv = data.copy()
@@ -55,7 +56,8 @@ def loocv(data, lambdas_smooth, opt_fn,
                    - np.log(np.exp(beta_loocv[rand_index[0],rand_index[1]])
                             + np.exp(beta_loocv[rand_index[0],rand_index[2]]))
 
-        print("%d-th cv done"%(i+1))
+        console.write("%d-th cv done\n"%(i+1))
+        console.flush()
         
     return (lambdas_smooth[np.argmax(loglikes_loocv)], -loglikes_loocv[::-1]/num_loocv, 
             betas[np.argmax(loglikes_loocv)])
