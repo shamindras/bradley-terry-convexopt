@@ -3,7 +3,7 @@ import scipy as sc
 from scipy import stats
 import numpy as np
 import matplotlib.pyplot as plt
-
+from scipy.sparse import diags
 
 def beta_gaussian_process(N, T, mu_parameters, cov_parameters, mu_type = 'constant', cov_type = 'toeplitz'):
     '''
@@ -42,13 +42,42 @@ def get_game_matrix_list(N,T,tn,beta):
         for i in range(N):
             for j in range(i + 1,N):
                 ind += 1
-                pij = np.exp(beta[t][i] - beta[t][j]) / (1 + np.exp(beta[t][i] - beta[t][j]))
+                pij = np.exp(beta[t,i] - beta[t,j]) / (1 + np.exp(beta[t,i] - beta[t,j]))
                 nij = np.random.binomial(n = tn[ind], p = pij, size = 1)
                 game_matrix[i,j],game_matrix[j,i] = nij, tn[ind] - nij
         game_matrix_list[t] = game_matrix
     return np.array(game_matrix_list)
 
-
+def beta_markov_chain(num_team,num_season,var_latent = 1,coef_latent = 1,sig_latent = 1,draw = True):
+    pc_latent = diags([-coef_latent/var_latent, 1/var_latent, -coef_latent/var_latent],
+                      offsets = [-1, 0, 1],
+                      shape=(num_season, num_season)).todense()
+    pc_latent[np.arange(num_season-1), np.arange(num_season-1)] += (coef_latent**2)/var_latent
+    var_latent = np.linalg.inv(pc_latent)
+    inv_sqrt_var = np.diag(1/np.sqrt(np.diag(var_latent)))
+    var_latent = sig_latent * inv_sqrt_var @ var_latent @ inv_sqrt_var
+    
+    latent = np.transpose(
+        np.random.multivariate_normal(
+            [0]*num_season, var_latent, num_team))
+    
+    if draw:
+        f = plt.figure(1, figsize = (12,5))
+        
+        ax = plt.subplot(121)
+        plt.imshow(var_latent, 
+           cmap='RdBu', vmin=-sig_latent, vmax=sig_latent)
+        plt.colorbar()
+        plt.title("variance")
+        
+        ax = plt.subplot(122)
+        plt.imshow(latent, cmap='RdBu',
+           vmin=-np.max(np.abs(latent)), 
+           vmax=np.max(np.abs(latent)))
+        plt.xlabel("team number")
+        plt.ylabel("season number")
+        plt.title("beta")
+    return latent
 '''
 some examles of running functions beta_gaussian_process and get_game_matrix_list
 ##### example of generating

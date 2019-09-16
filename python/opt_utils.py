@@ -137,9 +137,14 @@ def newton_l2_sq(data, l_penalty=1,
             if verbose:
                 print("Converged!")
             break
-        elif i >= max_iter-1:
-            if verbose:
-                print("Not converged.")
+
+    beta = beta.reshape((T,N))
+    beta = beta - sum(beta[0,0:N]) / N
+
+    if i >= max_iter-1:
+        if verbose:
+            print("Not converged.")
+
     return objective_nt, beta
 
 
@@ -291,44 +296,49 @@ def gd_l2(data, l_penalty=1,
         
         print("%d-th GD, objective value: %f"%(i+1, objective_gd[-1]))
         if abs(objective_gd[-2] - objective_gd[-1]) < ths:
-            print("Converged!")
+            if verbose:
+                print("Converged!")
             break
-            
+
+    beta = beta.reshape((T,N))
+    beta = beta - sum(beta[0,0:N]) / N
+
     if i >= max_iter - 1:
-        print("Not converged.")
+        if verbose:
+            print("Not converged.")
     return objective_gd, beta
 
 
 
 ############## functions for ADMM ################
 
-def obj_amlag(betak,data,A,muk,eta,thetak):
-    return model.neg_log_like(betak, data) + (A @ betak).T @ muk + eta / 2 * np.linalg.norm(A @ betak - thetak) ** 2
+def obj_amlag(beta,data,A,muk,eta,thetak):
+    return model.neg_log_like(beta, data) + (A @ beta).T @ muk + eta / 2 * np.linalg.norm(A @ beta - thetak) ** 2
     
-def admm_sub_beta(data,T,N,A,lam,eta,betak,muk,thetak,paras):
+def admm_sub_beta(data,T,N,A,lam,eta,beta,muk,thetak,paras):
     step_init, ths, max_iter, max_back, a, b = paras
     obj_old = np.inf
 
     for i in range(max_iter):    
         # compute gradient
-        gradient = model.grad_nl(betak, data) + A.T @ muk + eta * A.T @ (A @ betak - thetak)
-        hessian = model.hess_nl(betak, data) + eta * A.T @ A
+        gradient = model.grad_nl(beta, data) + A.T @ muk + eta * A.T @ (A @ beta - thetak)
+        hessian = model.hess_nl(beta, data) + eta * A.T @ A
         gradient = gradient[1:]
         hessian = hessian[1:,1:]
         # proximal gradient update
         s = step_init
-        beta_new = betak - 0 # make a copy
+        beta_new = beta - 0 # make a copy
         
         for j in range(max_back):
             v = -sc.linalg.solve(hessian, gradient)
-            beta_new[1:] = betak[1:] + s * v
+            beta_new[1:] = beta[1:] + s * v
             obj_new = obj_amlag(beta_new,data,A,muk,eta,thetak)
         
             if obj_new <= obj_old + b * s * gradient.T @ v:
                 break
             s *= a
             
-        betak = beta_new
+        beta = beta_new
         if abs(obj_old - obj_new) < ths:
             break
         obj_old = obj_new
@@ -336,7 +346,7 @@ def admm_sub_beta(data,T,N,A,lam,eta,betak,muk,thetak,paras):
     if i >= max_iter - 1:
         print("Not converged.")
     
-    return betak
+    return beta
 
 
 def prox_l2(t,x):
@@ -350,7 +360,7 @@ def prox_l1(t,x):
 
 
 def admm_l2(data, l_penalty=1,
-            max_iter=1000, ths=1e-12, eta=20, 
+            max_iter=1000, ths=1e-12, eta=None, 
             step_init=1, max_back=200, a=0.01, b=0.3,
             beta_init=None, verbose=False, return_b_obj = False):
     # initialize optimization
@@ -369,26 +379,27 @@ def admm_l2(data, l_penalty=1,
             A[t * N + i, (t + 1) * N + i] = 1
             A[t * N + i, (t) * N + i] = -1
 
-    betak = np.zeros((T * N,1))
+    if eta is None:
+        eta = 20 * l_penalty
 
     thetak = np.zeros(((T - 1) * N,1))
-    muk = A @ betak - thetak
+    muk = A @ beta - thetak
 
     # initialize record
-    objective_admm_b_l2 = [objective_l2(betak, data, l_penalty)]
-    objective_admm = [model.neg_log_like(betak, data) + l_penalty * np.linalg.norm(thetak)]
+    objective_admm_b_l2 = [objective_l2(beta, data, l_penalty)]
+    objective_admm = [model.neg_log_like(beta, data) + l_penalty * np.linalg.norm(thetak)]
     if verbose:
         print("initial objective value: %f"%objective_admm[-1])
 
     # iteration
     for i in range(max_iter):
         # compute gradient
-        betak = admm_sub_beta(data,T,N,A,l_penalty,eta,betak,muk,thetak,paras)
-        thetak = prox_l2(l_penalty / eta,A @ betak + muk / eta)
-        muk = muk + eta * (A @ betak - thetak)
+        beta = admm_sub_beta(data,T,N,A,l_penalty,eta,beta,muk,thetak,paras)
+        thetak = prox_l2(l_penalty / eta,A @ beta + muk / eta)
+        muk = muk + eta * (A @ beta - thetak)
         # objective value
-        objective_admm_b_l2.append(objective_l2(betak, data, l_penalty))
-        objective_admm.append(model.neg_log_like(betak, data) + l_penalty * np.linalg.norm(thetak))
+        objective_admm_b_l2.append(objective_l2(beta, data, l_penalty))
+        objective_admm.append(model.neg_log_like(beta, data) + l_penalty * np.linalg.norm(thetak))
         
         # if verbose
         #     print("%d-th ADMM, objective value: %f"%(i+1, objective_admm_b_l2[-1]))
@@ -398,14 +409,19 @@ def admm_l2(data, l_penalty=1,
         if verbose:
             print("%d-th ADMM, objective value: %f"%(i+1, objective_admm[-1]))
         if objective_admm[-2] - objective_admm[-1] < ths:
-            print("Converged!")
+            if verbose:
+                print("Converged!")
             break
-            
+    
+    beta = beta - sum(beta[0:N]) / N
+    beta = beta.reshape((T,N))
+
     if i >= max_iter - 1:
-        print("Not converged.")
+        if verbose:
+            print("Not converged.")
     if return_b_obj:
-        return objective_admm, objective_admm_b_l2, betak
-    return objective_admm, betak
+        return objective_admm, objective_admm_b_l2, beta
+    return objective_admm, beta
 
 ########################## l1 penalty ############################
 
@@ -489,18 +505,23 @@ def gd_l1(data, l_penalty=1,
                 print("%d-th GD, objective value: %f"%(i+1, objective_gd[-1]))
 
         if abs(objective_gd[-2] - objective_gd[-1]) < ths:
-            print("Converged!")
+            if verbose:
+                print("Converged!")
             break
+
+    beta = beta.reshape((T,N))
+    beta = beta - sum(beta[0,0:N]) / N
             
     if i >= max_iter - 1:
-        print("Not converged.")
+        if verbose:
+            print("Not converged.")
 
     return objective_gd, beta
 
 
 
 def admm_l1(data, l_penalty=1,
-            max_iter=1000, ths=1e-12, eta=20,
+            max_iter=1000, ths=1e-12, eta=None,
             step_init=1, max_back=200, a=0.01, b=0.3,
             beta_init=None, verbose=False, return_b_obj = False):
     # initialize optimization
@@ -519,26 +540,27 @@ def admm_l1(data, l_penalty=1,
             A[t * N + i, (t + 1) * N + i] = 1
             A[t * N + i, (t) * N + i] = -1
 
-    betak = np.zeros((T * N,1))
+    if eta is None:
+        eta = 20 * l_penalty
 
     thetak = np.zeros(((T - 1) * N,1))
-    muk = A @ betak - thetak
+    muk = A @ beta - thetak
 
     # initialize record
-    objective_admm_b_l1 = [objective_l1(betak, data, l_penalty)]
-    objective_admm = [model.neg_log_like(betak, data) + l_penalty * np.linalg.norm(thetak,1)]
+    objective_admm_b_l1 = [objective_l1(beta, data, l_penalty)]
+    objective_admm = [model.neg_log_like(beta, data) + l_penalty * np.linalg.norm(thetak,1)]
     if verbose:
         print("initial objective value: %f"%objective_admm[-1])
 
     # iteration
     for i in range(max_iter):
         # compute gradient
-        betak = admm_sub_beta(data,T,N,A,l_penalty,eta,betak,muk,thetak,paras)
-        thetak = prox_l1(l_penalty / eta,A @ betak + muk / eta)
-        muk = muk + eta * (A @ betak - thetak)
+        beta = admm_sub_beta(data,T,N,A,l_penalty,eta,beta,muk,thetak,paras)
+        thetak = prox_l1(l_penalty / eta,A @ beta + muk / eta)
+        muk = muk + eta * (A @ beta - thetak)
         # objective value
-        objective_admm_b_l1.append(objective_l1(betak, data, l_penalty))
-        objective_admm.append(model.neg_log_like(betak, data) + l_penalty * np.linalg.norm(thetak,1))
+        objective_admm_b_l1.append(objective_l1(beta, data, l_penalty))
+        objective_admm.append(model.neg_log_like(beta, data) + l_penalty * np.linalg.norm(thetak,1))
         
         # if verbose:
         #     print("%d-th ADMM, objective value: %f"%(i+1, objective_admm_b_l1[-1]))
@@ -548,11 +570,17 @@ def admm_l1(data, l_penalty=1,
         if verbose:
             print("%d-th ADMM, objective value: %f"%(i+1, objective_admm[-1]))
         if objective_admm[-2] - objective_admm[-1] < ths:
-            print("Converged!")
+            if verbose:
+                print("Converged!")
             break
-            
+    
+    beta = beta - sum(beta[0:N]) / N
+    beta = beta.reshape((T,N))
+
     if i >= max_iter - 1:
-        print("Not converged.")
+        if verbose:
+            print("Not converged.")
+
     if return_b_obj:
-        return objective_admm, objective_admm_b_l1, betak
-    return objective_admm, betak
+        return objective_admm, objective_admm_b_l1, beta
+    return objective_admm, beta
