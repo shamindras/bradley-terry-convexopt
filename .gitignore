@@ -177,3 +177,10 @@ Network Trash Folder
 Temporary Items
 .apdisk
 .Rproj.user
+
+# data
+## nascar
+data/nascar/nascar2002.mat
+data/nascar/nascar2002.txt
+data/nascar/nascar2002.xls
+data/nascar/nascar_2002_all_std.csv
