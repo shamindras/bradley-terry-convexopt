@@ -1,7 +1,7 @@
 # Efficient Estimation of Distribution-free dynamics in the Bradley-Terry Model
 
 This repo stores the notes/ experiments and paper for
-the paper titled _Time-varying Bradley Terry Model in Frequentist Setting_
+the paper titled _Efficient Estimation of Distribution-free dynamics in the Bradley-Terry Model_
 
 The paper can be found here and is co-authored by
   - Anonymous Authors
