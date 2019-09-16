@@ -28,11 +28,14 @@ def loocv(data, lambdas_smooth, opt_fn,
     beta_cv: beta chosen after cross-validation. None if get_estimate is False
     '''    
     lambdas_smooth = lambdas_smooth.flatten()
+    lambdas_smooth = -np.sort(-lambdas_smooth)
     betas = [None] * lambdas_smooth.shape[0]
     
+    last_beta = np.zeros(data.shape[:2])
     for i, lambda_smooth in enumerate(lambdas_smooth):
-        _, beta = opt_fn(data, lambda_smooth, **kwargs)
+        _, beta = opt_fn(data, lambda_smooth, beta_init = last_beta, **kwargs)
         betas[i] = beta.reshape(data.shape[:2])
+        last_beta = betas[i]
         
     indices = np.array(np.where(np.full(data.shape, True))).T
     cum_match = np.cumsum(data.flatten())
@@ -54,5 +57,5 @@ def loocv(data, lambdas_smooth, opt_fn,
 
         print("%d-th cv done"%(i+1))
         
-    return (lambdas_smooth[np.argmax(loglikes_loocv)], -loglikes_loocv/num_loocv, 
+    return (lambdas_smooth[np.argmax(loglikes_loocv)], -loglikes_loocv[::-1]/num_loocv, 
             betas[np.argmax(loglikes_loocv)])
