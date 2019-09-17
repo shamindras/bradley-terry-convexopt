@@ -1,3 +1,4 @@
+import sys
 import numpy as np
 import scipy as sc
 import pandas as pd
@@ -94,7 +95,7 @@ def prox_l2_sq(beta, s, l):
 def newton_l2_sq(data, l_penalty=1,
                  max_iter=1000, ths=1e-12,
                  step_init=1, max_back=200, a=0.01, b=0.3,
-                 beta_init=None, verbose=False):
+                 beta_init=None, verbose=False, out=sys.stdout):
     # initialize optimization
     T, N = data.shape[0:2]
     if beta_init is None:
@@ -105,7 +106,8 @@ def newton_l2_sq(data, l_penalty=1,
     # initialize record
     objective_nt = [objective_l2_sq(beta, data, l_penalty)]
     if verbose:
-        print("initial objective value: %f"%objective_nt[-1])
+        out.write("initial objective value: %f\n"%objective_nt[-1])
+        out.flush()
 
     # iteration
     for i in range(max_iter):
@@ -127,31 +129,33 @@ def newton_l2_sq(data, l_penalty=1,
             s *= a
             
         beta = beta_new
+        
         # objective value
         objective_nt.append(obj_new)
         obj_old = obj_new
 
         if verbose:
-            print("%d-th Newton, objective value: %f"%(i+1, objective_nt[-1]))
+            out.write("%d-th Newton, objective value: %f\n"%(i+1, objective_nt[-1]))
+            out.flush()
         if objective_nt[-2] - objective_nt[-1] < ths:
             if verbose:
-                print("Converged!")
+                out.write("Converged!\n")
+                out.flush()
             break
+        elif i >= max_iter-1:
+            if verbose:
+                out.write("Not converged.\n")
+                out.flush()
 
     beta = beta.reshape((T,N))
-    beta = beta - sum(beta[0,0:N]) / N
-
-    if i >= max_iter-1:
-        if verbose:
-            print("Not converged.")
+    beta = beta - sum(beta[0,0:N]) / N   
 
     return objective_nt, beta
-
 
 def pgd_l2_sq(data, l_penalty=1,
               max_iter=1000, ths=1e-12,
               step_init=0.5, max_back=200, a=0.2, b=0.5,
-              beta_init=None, verbose=False):
+              beta_init=None, verbose=False, out=sys.stdout):
     # initialize optimization
     T, N = data.shape[0:2]
     if beta_init is None:
@@ -163,7 +167,8 @@ def pgd_l2_sq(data, l_penalty=1,
     # initialize record
     objective_wback = [objective_l2_sq(beta, data, l_penalty)]
     if verbose:
-        print("initial objective value: %f"%objective_wback[-1])
+        out.write("initial objective value: %f\n"%objective_wback[-1])
+        out.flush()
 
     # iteration
     for i in range(max_iter):
@@ -192,14 +197,17 @@ def pgd_l2_sq(data, l_penalty=1,
         objective_wback.append(objective_l2_sq(beta, data, l_penalty))
         
         if verbose:
-            print("%d-th PGD, objective value: %f"%(i+1, objective_wback[-1]))
+            out.write("%d-th PGD, objective value: %f\n"%(i+1, objective_wback[-1]))
+            out.flush()
         if abs(objective_wback[-2] - objective_wback[-1]) < ths:
             if verbose:
-                print("Converged!")
+                out.write("Converged!\n")
+                out.flush()
             break
         elif i >= max_iter-1:
             if verbose:
-                print("Not converged.")
+                out.write("Not converged.\n")
+                out.flush()
 
     return objective_wback, beta
 
@@ -262,7 +270,7 @@ def grad_l2(beta, game_matrix_list, l):
 def gd_l2(data, l_penalty=1,
           max_iter=1000, ths=1e-12,
           step_init=1, max_back=200, a=0.01, b=0.3,
-          beta_init=None, verbose=False):
+          beta_init=None, verbose=False, out=sys.stdout):
     # initialize optimization
     T, N = data.shape[0:2]
     if beta_init is None:
@@ -273,7 +281,8 @@ def gd_l2(data, l_penalty=1,
     # initialize record
     objective_gd = [objective_l2(beta, data, l_penalty)]
     if verbose:
-        print("initial objective value: %f"%objective_gd[-1])
+        out.write("initial objective value: %f\n"%objective_gd[-1])
+        out.flush()
 
         # iteration
     for i in range(max_iter):
@@ -294,20 +303,22 @@ def gd_l2(data, l_penalty=1,
         beta = beta_new
         objective_gd.append(obj_new)
         
-        print("%d-th GD, objective value: %f"%(i+1, objective_gd[-1]))
+        out.write("%d-th GD, objective value: %f\n"%(i+1, objective_gd[-1]))
+        out.flush()
         if abs(objective_gd[-2] - objective_gd[-1]) < ths:
             if verbose:
-                print("Converged!")
+                out.write("Converged!\n")
+                out.flush()
             break
+        elif i >= max_iter - 1:
+            if verbose:
+                out.write("Not converged.\n")
+                out.flush()
 
     beta = beta.reshape((T,N))
     beta = beta - sum(beta[0,0:N]) / N
-
-    if i >= max_iter - 1:
-        if verbose:
-            print("Not converged.")
+    
     return objective_gd, beta
-
 
 
 ############## functions for ADMM ################
@@ -315,7 +326,7 @@ def gd_l2(data, l_penalty=1,
 def obj_amlag(beta,data,A,muk,eta,thetak):
     return model.neg_log_like(beta, data) + (A @ beta).T @ muk + eta / 2 * np.linalg.norm(A @ beta - thetak) ** 2
     
-def admm_sub_beta(data,T,N,A,lam,eta,beta,muk,thetak,paras):
+def admm_sub_beta(data,T,N,A,lam,eta,beta,muk,thetak,paras,out=sys.stdout):
     step_init, ths, max_iter, max_back, a, b = paras
     obj_old = np.inf
 
@@ -341,10 +352,10 @@ def admm_sub_beta(data,T,N,A,lam,eta,beta,muk,thetak,paras):
         beta = beta_new
         if abs(obj_old - obj_new) < ths:
             break
-        obj_old = obj_new
-        
-    if i >= max_iter - 1:
-        print("Not converged.")
+        elif i >= max_iter - 1:
+            out.write("Not converged.\n")
+            out.flush()
+        obj_old = obj_new   
     
     return beta
 
@@ -362,7 +373,7 @@ def prox_l1(t,x):
 def admm_l2(data, l_penalty=1,
             max_iter=1000, ths=1e-12, eta=None, 
             step_init=1, max_back=200, a=0.01, b=0.3,
-            beta_init=None, verbose=False, return_b_obj = False):
+            beta_init=None, verbose=False, out=sys.stdout, return_b_obj=False):
     # initialize optimization
     T, N = data.shape[0:2]
     if beta_init is None:
@@ -389,12 +400,13 @@ def admm_l2(data, l_penalty=1,
     objective_admm_b_l2 = [objective_l2(beta, data, l_penalty)]
     objective_admm = [model.neg_log_like(beta, data) + l_penalty * np.linalg.norm(thetak)]
     if verbose:
-        print("initial objective value: %f"%objective_admm[-1])
+        out.write("initial objective value: %f\n"%objective_admm[-1])
+        out.flush()
 
     # iteration
     for i in range(max_iter):
         # compute gradient
-        beta = admm_sub_beta(data,T,N,A,l_penalty,eta,beta,muk,thetak,paras)
+        beta = admm_sub_beta(data,T,N,A,l_penalty,eta,beta,muk,thetak,paras,out)
         thetak = prox_l2(l_penalty / eta,A @ beta + muk / eta)
         muk = muk + eta * (A @ beta - thetak)
         # objective value
@@ -407,20 +419,23 @@ def admm_l2(data, l_penalty=1,
         #     print("Converged!")
         #     break
         if verbose:
-            print("%d-th ADMM, objective value: %f"%(i+1, objective_admm[-1]))
+            out.write("%d-th ADMM, objective value: %f\n"%(i+1, objective_admm[-1]))
+            out.flush()
         if objective_admm[-2] - objective_admm[-1] < ths:
             if verbose:
-                print("Converged!")
+                out.write("Converged!\n")
+                out.flush()
             break
-    
+        elif i >= max_iter - 1:
+            if verbose:
+                out.write("Not converged.")
+                out.flush()
+            
     beta = beta - sum(beta[0:N]) / N
     beta = beta.reshape((T,N))
 
-    if i >= max_iter - 1:
-        if verbose:
-            print("Not converged.")
     if return_b_obj:
-        return objective_admm, objective_admm_b_l2, beta
+        return (objective_admm, objective_admm_b_l2), beta
     return objective_admm, beta
 
 ########################## l1 penalty ############################
@@ -477,7 +492,7 @@ def grad_l1(beta, game_matrix_list, l):
 
 def gd_l1(data, l_penalty=1,
           max_iter=50000, ths=1e-12, step_size=0.05, 
-          beta_init=None, verbose=False):
+          beta_init=None, verbose=False, out=sys.stdout):
     # initialize optimization
     T, N = data.shape[0:2]
     if beta_init is None:
@@ -487,7 +502,9 @@ def gd_l1(data, l_penalty=1,
 
     # initialize record
     objective_gd = [objective_l1(beta, data, l_penalty)]
-    print("initial objective value: %f"%objective_gd[-1])
+    if verbose:
+        out.write("initial objective value: %f\n"%objective_gd[-1])
+        out.flush()
 
     # iteration
     for i in range(max_iter):
@@ -502,28 +519,29 @@ def gd_l1(data, l_penalty=1,
         
         if verbose: 
             if (i + 1) % 100 == 0:
-                print("%d-th GD, objective value: %f"%(i+1, objective_gd[-1]))
+                out.write("%d-th GD, objective value: %f\n"%(i+1, objective_gd[-1]))
+                out.flush()
 
         if abs(objective_gd[-2] - objective_gd[-1]) < ths:
             if verbose:
-                print("Converged!")
+                out.write("Converged!\n")
+                out.flush()
             break
+        elif i >= max_iter - 1:
+            if verbose:
+                out.write("Not converged.\n")
+                out.flush()
 
     beta = beta.reshape((T,N))
     beta = beta - sum(beta[0,0:N]) / N
             
-    if i >= max_iter - 1:
-        if verbose:
-            print("Not converged.")
-
     return objective_gd, beta
-
 
 
 def admm_l1(data, l_penalty=1,
             max_iter=1000, ths=1e-12, eta=None,
             step_init=1, max_back=200, a=0.01, b=0.3,
-            beta_init=None, verbose=False, return_b_obj = False):
+            beta_init=None, verbose=False, out=sys.stdout, return_b_obj = False):
     # initialize optimization
     T, N = data.shape[0:2]
     if beta_init is None:
@@ -548,14 +566,16 @@ def admm_l1(data, l_penalty=1,
 
     # initialize record
     objective_admm_b_l1 = [objective_l1(beta, data, l_penalty)]
-    objective_admm = [model.neg_log_like(beta, data) + l_penalty * np.linalg.norm(thetak,1)]
+    objective_admm = [model.neg_log_like(beta, data) + l_penalty 
+                      * np.linalg.norm(thetak,1)]
     if verbose:
-        print("initial objective value: %f"%objective_admm[-1])
+        out.write("initial objective value: %f\n"%objective_admm[-1])
+        out.flush()
 
     # iteration
     for i in range(max_iter):
         # compute gradient
-        beta = admm_sub_beta(data,T,N,A,l_penalty,eta,beta,muk,thetak,paras)
+        beta = admm_sub_beta(data,T,N,A,l_penalty,eta,beta,muk,thetak,paras,out)
         thetak = prox_l1(l_penalty / eta,A @ beta + muk / eta)
         muk = muk + eta * (A @ beta - thetak)
         # objective value
@@ -568,19 +588,21 @@ def admm_l1(data, l_penalty=1,
         #     print("Converged!")
         #     break
         if verbose:
-            print("%d-th ADMM, objective value: %f"%(i+1, objective_admm[-1]))
+            out.write("%d-th ADMM, objective value: %f\n"%(i+1, objective_admm[-1]))
+            out.flush()
         if objective_admm[-2] - objective_admm[-1] < ths:
             if verbose:
-                print("Converged!")
+                out.write("Converged!\n")
+                out.flush()
             break
+        elif i >= max_iter - 1:
+            if verbose:
+                out.write("Not converged.\n")
+                out.flush()
     
     beta = beta - sum(beta[0:N]) / N
     beta = beta.reshape((T,N))
 
-    if i >= max_iter - 1:
-        if verbose:
-            print("Not converged.")
-
     if return_b_obj:
-        return objective_admm, objective_admm_b_l1, beta
+        return (objective_admm, objective_admm_b_l1), beta
     return objective_admm, beta
